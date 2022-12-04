@@ -3,6 +3,10 @@
   "license": "MIT",
   "version": "1.0.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apikee/react-simple-store"
+  },
   "files": [
     "dist"
   ],
