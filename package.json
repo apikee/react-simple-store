@@ -1,7 +1,7 @@
 {
   "name": "@apikee/react-simple-store",
   "license": "MIT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -20,7 +20,8 @@
     }
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "publish": "npm publish --access public"
   },
   "dependencies": {
     "react": "17.x || 18.x",

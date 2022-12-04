@@ -66,7 +66,7 @@ const store2 = simpleStore({ lastName: "Doe" });
 
 const useFullName = () => {
   const firstName = store1.useStoreValue(({ firstName }) => firstName);
-  const lastName = store1.useStoreValue(({ lastName }) => lastName);
+  const lastName = store2.useStoreValue(({ lastName }) => lastName);
 
   return `${firstName} ${lastName}`;
 };
