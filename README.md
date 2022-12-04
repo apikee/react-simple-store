@@ -123,7 +123,7 @@ const ComponentTwo = () => {
       <input value={newName} onChange={(e) => setNewName(e.target.value)} />
 
       {/* Changing `name` property that is used in different component */}
-      <button onClick={() => store.set({ name: newName })}>Change Age</button>
+      <button onClick={() => store.set({ name: newName })}>Change Name</button>
     </div>
   );
 };
