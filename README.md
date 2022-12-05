@@ -94,7 +94,7 @@ const MyComponent = () => {
 Example:
 
 ```tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { simpleStore } from "@apikee/react-simple-store";
 
 const defaultValue = {
