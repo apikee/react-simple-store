@@ -31,30 +31,42 @@ const store = simpleStore<User>({
 });
 ```
 
-2. Use store values in components
+2. Use store data in components
 
 ```tsx
 const MyComponent = () => {
-  const name = store.useStoreValue((values) => values.name);
+  const data = store.useStore();
 
-  return <div>{name}</div>;
+  return <div>{data.name}</div>;
 };
 ```
 
-3. Change the store values
+3. Change store values from inside a component
 
 ```tsx
-// Always use the store.set(newState) function when changing the store values
-<button onClick={() => store.set({ age: Math.floor(Math.random() * 60) })}>
-  Change Store Value
+// ._set() method is a part of the data object, you can use it to change the store data
+<button onClick={() => data._set({ age: Math.floor(Math.random() * 60) })}>
+  Change Age
 </button>
 ```
 
-4. If needed, get the store values outside of components
+Or outside of component
+
+```tsx
+const store = simpleStore({
+  name: "John",
+  age: 32,
+});
+
+store.set({ age: Math.floor(Math.random() * 60) });
+// Components gets re-rendered accordingly
+```
+
+4. Get store values outside of components
 
 ```tsx
 // Note that if used in component this way, React will not re-render component when value changes
-// Always use store.useStoreValue(selector) in components to get the store value
+// Always use store.useStore() in components to get the store values
 const { name, age } = store.get();
 ```
 
@@ -65,8 +77,8 @@ const store1 = simpleStore({ firstName: "John" });
 const store2 = simpleStore({ lastName: "Doe" });
 
 const useFullName = () => {
-  const firstName = store1.useStoreValue(({ firstName }) => firstName);
-  const lastName = store2.useStoreValue(({ lastName }) => lastName);
+  const { firstName } = store1.useStore();
+  const { lastName } = store2.useStore();
 
   return `${firstName} ${lastName}`;
 };
@@ -94,36 +106,42 @@ const defaultValue = {
 const store = simpleStore(defaultValue);
 
 const ComponentOne = () => {
-  // Pass selector function as an argument that returns the value you want from the store
-  const name = store.useStoreValue((values) => values.name);
+  const data = store.useStore();
 
   useEffect(() => {
     console.log("Name Changed");
-  }, [name]);
+  }, [data.name]);
 
   return (
-    // Changing `age` property that is used in different component
-    <button onClick={() => store.set({ age: Math.floor(Math.random() * 60) })}>
-      Change Age
-    </button>
+    <>
+      <div>My name is {data.name}</div>
+
+      {/* Changing `age` property that is used in different component */}
+      <button
+        onClick={() => data._set({ age: Math.floor(Math.random() * 60) })}
+      >
+        Change Age
+      </button>
+    </>
   );
 };
 
 const ComponentTwo = () => {
-  const age = store.useStoreValue((values) => values.age);
+  const data = store.useStore();
 
   const [newName, setNewName] = useState("");
 
   useEffect(() => {
     console.log("Age Changed");
-  }, [age]);
+  }, [data.age]);
 
   return (
     <div>
+      <div>My age is {data.age}</div>
       <input value={newName} onChange={(e) => setNewName(e.target.value)} />
 
       {/* Changing `name` property that is used in different component */}
-      <button onClick={() => store.set({ name: newName })}>Change Name</button>
+      <button onClick={() => data._set({ name: newName })}>Change Name</button>
     </div>
   );
 };

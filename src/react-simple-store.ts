@@ -1,19 +1,28 @@
 import { useEffect, useState } from "react";
 
+type CustomEventDetail<T> = {
+  detail: { changes: Partial<T> & { [key: string]: any }; _state: T };
+};
+
 export type SimpleStoreState = Record<string, any>;
 export type SimpleStoreListenerCallback<T> = (_newState: T) => void;
 export type SimpleStoreSelector<T, U> = (state: T) => U;
+export type EnhancedSimpleStoreState<T> = T & {
+  _set: (value: Partial<T>) => void;
+};
 export interface ReactSimpleStore<T> {
-  get: T;
+  get: () => T;
   set: (value: Partial<T>) => void;
-  useStoreValue: <U>(selector: SimpleStoreSelector<T, U>) => U;
+  useStore: () => EnhancedSimpleStoreState<T>;
 }
 
 const assert = (condition: boolean, message?: string) => {
   if (!condition) throw new Error(message || "Assertion failed");
 };
 
-export const simpleStore = <T = SimpleStoreState>(defaultValue: T) => {
+export const simpleStore = <T = SimpleStoreState>(
+  defaultValue: T
+): ReactSimpleStore<T> => {
   assert(
     typeof defaultValue === "object" &&
       !Array.isArray(defaultValue) &&
@@ -21,11 +30,34 @@ export const simpleStore = <T = SimpleStoreState>(defaultValue: T) => {
     "react-simple-store: default value has to be object"
   );
 
+  const eventName = "react-simple-store-set";
   let _state: T = defaultValue;
-  const _listeners: SimpleStoreListenerCallback<T>[] = [];
 
-  const _invokeListeners = () => {
-    for (const listener of _listeners) listener(_state);
+  const _invokeListeners = (changes: Partial<T>) => {
+    document.dispatchEvent(new CustomEvent(eventName, { detail: { changes } }));
+  };
+
+  const _setCallback = (value: Partial<T>): void => {
+    assert(
+      typeof value === "object" && !Array.isArray(value) && value !== null,
+      "react-simple-store: new value has to be object"
+    );
+
+    _state = { ..._state, ...value };
+    _invokeListeners(value);
+  };
+
+  const _createProxyCopy = () => {
+    return { ..._state, _set: _setCallback };
+  };
+
+  const _createProxy = (cb: (property: string) => void) => {
+    return new Proxy(_createProxyCopy() as any, {
+      get(a, b) {
+        cb(b as string);
+        return a[b];
+      },
+    });
   };
 
   return {
@@ -33,34 +65,40 @@ export const simpleStore = <T = SimpleStoreState>(defaultValue: T) => {
       return _state;
     },
 
-    set: (value: Partial<T>): void => {
-      assert(
-        typeof value === "object" && !Array.isArray(value) && value !== null,
-        "react-simple-store: new value has to be object"
-      );
+    set: _setCallback,
 
-      _state = { ..._state, ...value };
-      _invokeListeners();
-    },
+    useStore: (): EnhancedSimpleStoreState<T> => {
+      const listeners: string[] = [];
 
-    useStoreValue: <U>(selector: SimpleStoreSelector<T, U>): U => {
-      const [value, setValue] = useState<T>(_state);
+      const addListener = (property: string) => {
+        if (!listeners.includes(property)) listeners.push(property);
+      };
 
-      const callback = (_newState: T): void => {
-        setValue((prevValue: T) => {
-          if (selector(_newState as T) !== selector(prevValue)) {
-            return _newState as T;
+      const [value, setValue] = useState<T>(_createProxy(addListener));
+
+      const callback = (detail: CustomEventDetail<T>["detail"]): void => {
+        const { changes } = detail;
+        const toChange: { [key: string]: any } = {};
+
+        for (let key of Object.keys(changes)) {
+          if (listeners.includes(key)) {
+            toChange[key] = changes[key];
           }
+        }
 
-          return prevValue;
-        });
+        if (Object.keys(toChange).length > 0) {
+          setValue(_createProxy(addListener));
+        }
       };
 
       useEffect(() => {
-        _listeners.push(callback);
+        document.addEventListener(eventName, (e) => {
+          const { detail } = e as unknown as CustomEventDetail<T>;
+          callback(detail);
+        });
       }, []);
 
-      return selector(value);
+      return value as EnhancedSimpleStoreState<T>;
     },
   };
 };
